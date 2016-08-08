@@ -1,4 +1,3 @@
-import tweenState from 'react-tween-state';
 import NativeButton from './NativeButton';
 import styles from './styles';
 
@@ -13,6 +12,7 @@ import {
   StyleSheet,
   Text,
   View,
+  LayoutAnimation,
 } from 'react-native';
 
 const SwipeoutBtn = React.createClass({
@@ -95,7 +95,6 @@ const SwipeoutBtn = React.createClass({
 });
 
 const Swipeout = React.createClass({
-  mixins: [tweenState.Mixin],
 
   propTypes: {
     autoClose: PropTypes.bool,
@@ -107,6 +106,7 @@ const Swipeout = React.createClass({
     scroll: PropTypes.func,
     style: View.propTypes.style,
     sensitivity: PropTypes.number,
+    configureNextAnimation: PropTypes.func,
   },
 
   getDefaultProps: function() {
@@ -114,6 +114,7 @@ const Swipeout = React.createClass({
       rowID: -1,
       sectionID: -1,
       sensitivity: 0,
+      configureNextAnimation: LayoutAnimation.easeInEaseOut,
     };
   },
 
@@ -128,7 +129,6 @@ const Swipeout = React.createClass({
       contentWidth: 0,
       openedRight: false,
       swiping: false,
-      tweenDuration: 160,
       timeStart: null,
     };
   },
@@ -216,30 +216,24 @@ const Swipeout = React.createClass({
     if (this.state.swiping) {
       if (openRight && contentPos < 0 && posX < 0) {
         // open swipeout right
-        this._tweenContent('contentPos', -btnsRightWidth);
-        this.setState({ contentPos: -btnsRightWidth, openedLeft: false, openedRight: true });
+        this.props.configureNextAnimation();
+        this.setState({ contentPos: -btnsRightWidth, openedLeft: false, openedRight: true })
       } else if (openLeft && contentPos > 0 && posX > 0) {
         // open swipeout left
-        this._tweenContent('contentPos', btnsLeftWidth);
-        this.setState({ contentPos: btnsLeftWidth, openedLeft: true, openedRight: false });
+        this.props.configureNextAnimation();
+        this.setState({ contentPos: btnsLeftWidth, openedLeft: true, openedRight: false })
       }
       else {
         // close swipeout
-        this._tweenContent('contentPos', 0);
-        this.setState({ contentPos: 0, openedLeft: false, openedRight: false });
+        this.props.configureNextAnimation(() => {
+          this.setState({openedLeft: false, openedRight: false, contentPos: 0});
+        });
+        this.setState({contentPos: openRight ? 1 : -1});
       }
     }
 
     //  Allow scroll
     if (this.props.scroll) this.props.scroll(true);
-  },
-
-  _tweenContent: function(state, endValue) {
-    this.tweenState(state, {
-      easing: tweenState.easingTypes.easeInOutQuad,
-      duration: endValue === 0 ? this.state.tweenDuration*1.5 : this.state.tweenDuration,
-      endValue: endValue,
-    });
   },
 
   _rubberBandEasing: function(value, limit) {
@@ -256,16 +250,16 @@ const Swipeout = React.createClass({
   },
 
   _close: function() {
-    this._tweenContent('contentPos', 0);
     this.setState({
       openedRight: false,
       openedLeft: false,
+      contentPos: 0,
     });
   },
 
   render: function() {
     var contentWidth = this.state.contentWidth;
-    var posX = this.getTweeningValue('contentPos');
+    var posX = this.state.contentPos;
 
     var styleSwipeout = [styles.swipeout, this.props.style];
     if (this.props.backgroundColor) {
