@@ -140,6 +140,8 @@ const Swipeout = React.createClass({
         Math.abs(gestureState.dx) > this.props.sensitivity,
       onStartShouldSetPanResponderCapture: (event, gestureState) =>
         this.state.openedRight || this.state.openedLeft,
+      onPanResponderTerminationRequest: (event, gestureState) =>
+        !this.state.swiping,
       onPanResponderGrant: this._handlePanResponderGrant,
       onPanResponderMove: this._handlePanResponderMove,
       onPanResponderRelease: this._handlePanResponderEnd,
